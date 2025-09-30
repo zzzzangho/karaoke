@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>✨ 노래방 반주기 ✨</title>
+  <!-- ✅ 모바일 반응형 필수 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: "Malgun Gothic", sans-serif;
@@ -55,6 +57,7 @@
 
     h2 {
       margin-bottom: 10px;
+      text-align: center;
     }
 
     .selector {
@@ -104,14 +107,18 @@
       background: #ff6666;
     }
 
-    /* 모바일일 때 세로 레이아웃 */
-    @media (max-width: 768px) {
+    /* ✅ 모바일/태블릿일 때 세로 레이아웃 */
+    @media (max-width: 1024px) {
+      body {
+        align-items: stretch;
+      }
       .container {
         flex-direction: column;
-        align-items: center;
+        gap: 20px;
       }
       .player-box, .control-panel {
-        flex: 1 1 100%;
+        flex: none;
+        width: 100%;
       }
       iframe {
         max-height: 50vh;
@@ -133,23 +140,19 @@
 
     <!-- 오른쪽 패널 -->
     <div class="control-panel">
-      <!-- 금영/TJ 선택 -->
       <div class="selector">
         <button id="kyBtn" class="btn-option active" onclick="selectBrand('금영')">금영</button>
         <button id="tjBtn" class="btn-option" onclick="selectBrand('TJ')">TJ</button>
       </div>
 
-      <!-- 노래 제목 입력 -->
       <input type="text" id="songInput" placeholder="노래 제목 입력">
-
-      <!-- 재생 버튼 -->
       <button class="btn-confirm" onclick="playSong()">재생 ▶</button>
     </div>
   </div>
 
   <script>
     const API_KEY = "AIzaSyB-_4IassJXMmCp3y-3O6Tt0fObbzYYFto"; // 본인 키
-    let selectedBrand = "금영"; // 기본값: 금영
+    let selectedBrand = "금영";
 
     function selectBrand(brand) {
       selectedBrand = brand;
@@ -170,9 +173,8 @@
         return;
       }
 
-      // ✅ 금영은 KY karaoke / TJ는 TJ
+      // ✅ 금영 = KY karaoke / TJ = TJ
       let brandQuery = selectedBrand === "금영" ? "KY karaoke" : "TJ";
-      // 🔥 "노래방" 제거 → 더 정확한 검색
       let query = encodeURIComponent(`${brandQuery} ${songTitle}`);
       let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${query}&key=${API_KEY}`;
 
@@ -185,12 +187,8 @@
           let first = data.items[0];
           if (first.id.kind === "youtube#video") {
             let videoId = first.id.videoId;
-
-            // 자동재생 + 소리
             document.getElementById("player").src =
               `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-
-            // 입력 초기화
             document.getElementById("songInput").value = "";
           } else {
             alert("검색된 결과가 영상이 아닙니다.");
@@ -204,7 +202,6 @@
       }
     }
 
-    // Enter 키로도 재생
     document.getElementById("songInput").addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
         playSong();
