@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>✨ 노래방 반주기 ✨</title>
+  <style>
+    body {
+      font-family: "Malgun Gothic", sans-serif;
+      background: linear-gradient(135deg, #1c1c1c, #333);
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      width: 100%;
+      height: 100%;
+      max-width: 1600px;
+    }
+
+    /* 왼쪽 영상 */
+    .player-box {
+      flex: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      max-height: 80vh;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.7);
+    }
+
+    /* 오른쪽 제어 패널 */
+    .control-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .selector {
+      display: flex;
+      gap: 15px;
+    }
+
+    .btn-option {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #555;
+      color: #fff;
+      font-size: 1.2em;
+      transition: 0.2s;
+    }
+
+    .btn-option.active {
+      background: #ffcc00;
+      color: #000;
+      font-weight: bold;
+    }
+
+    #songInput {
+      width: 80%;
+      font-size: 1.2em;
+      padding: 10px;
+      border: 2px solid #ffcc00;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .btn-confirm {
+      padding: 15px;
+      width: 80%;
+      font-size: 1.3em;
+      background: #ff4444;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-confirm:hover {
+      background: #ff6666;
+    }
+
+    /* 모바일일 때 세로 레이아웃 */
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .player-box, .control-panel {
+        flex: 1 1 100%;
+      }
+      iframe {
+        max-height: 50vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 왼쪽 영상 -->
+    <div class="player-box">
+      <h2>✨ 노래방 반주기 ✨</h2>
+      <iframe id="player"
+        src="" frameborder="0"
+        allow="autoplay; encrypted-media"
+        allowfullscreen>
+      </iframe>
+    </div>
+
+    <!-- 오른쪽 패널 -->
+    <div class="control-panel">
+      <!-- 금영/TJ 선택 -->
+      <div class="selector">
+        <button id="kyBtn" class="btn-option active" onclick="selectBrand('금영')">금영</button>
+        <button id="tjBtn" class="btn-option" onclick="selectBrand('TJ')">TJ</button>
+      </div>
+
+      <!-- 노래 제목 입력 -->
+      <input type="text" id="songInput" placeholder="노래 제목 입력">
+
+      <!-- 재생 버튼 -->
+      <button class="btn-confirm" onclick="playSong()">재생 ▶</button>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "AIzaSyB-_4IassJXMmCp3y-3O6Tt0fObbzYYFto"; // 본인 키
+    let selectedBrand = "금영"; // 기본값: 금영
+
+    function selectBrand(brand) {
+      selectedBrand = brand;
+      document.getElementById("kyBtn").classList.remove("active");
+      document.getElementById("tjBtn").classList.remove("active");
+
+      if (brand === "금영") {
+        document.getElementById("kyBtn").classList.add("active");
+      } else {
+        document.getElementById("tjBtn").classList.add("active");
+      }
+    }
+
+    async function playSong() {
+      let songTitle = document.getElementById("songInput").value.trim();
+      if (!songTitle) {
+        alert("노래 제목을 입력하세요!");
+        return;
+      }
+
+      // ✅ 금영은 KY karaoke / TJ는 TJ
+      let brandQuery = selectedBrand === "금영" ? "KY karaoke" : "TJ";
+      // 🔥 "노래방" 제거 → 더 정확한 검색
+      let query = encodeURIComponent(`${brandQuery} ${songTitle}`);
+      let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${query}&key=${API_KEY}`;
+
+      try {
+        let res = await fetch(url);
+        let data = await res.json();
+        console.log("API 응답:", data);
+
+        if (data.items && data.items.length > 0) {
+          let first = data.items[0];
+          if (first.id.kind === "youtube#video") {
+            let videoId = first.id.videoId;
+
+            // 자동재생 + 소리
+            document.getElementById("player").src =
+              `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+
+            // 입력 초기화
+            document.getElementById("songInput").value = "";
+          } else {
+            alert("검색된 결과가 영상이 아닙니다.");
+          }
+        } else {
+          alert("검색 결과가 없습니다.");
+        }
+      } catch (err) {
+        console.error("API 오류:", err);
+        alert("영상을 불러오는 중 오류가 발생했습니다.");
+      }
+    }
+
+    // Enter 키로도 재생
+    document.getElementById("songInput").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        playSong();
+      }
+    });
+  </script>
+</body>
+</html>
