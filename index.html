@@ -2,8 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>✨ 노래방 반주기 ✨</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>✨ 찬송가 반주기 ✨</title>
   <style>
     body {
       font-family: "Malgun Gothic", sans-serif;
@@ -28,16 +27,17 @@
     }
 
     .player-box {
-      flex: 2;
+      flex: 3;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
     }
 
     iframe {
       width: 100%;
-      height: 70vh;
+      height: 100%;
+      max-height: 80vh;
       border-radius: 12px;
       box-shadow: 0 0 15px rgba(0,0,0,0.7);
     }
@@ -47,157 +47,110 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      justify-content: center;
     }
 
-    #songInput {
+    #display {
       width: 80%;
-      font-size: 1.2em;
+      font-size: 2vw;
+      text-align: center;
+      margin-bottom: 20px;
       padding: 10px;
       border: 2px solid #ffcc00;
       border-radius: 8px;
-      text-align: center;
+      background: #000;
+      color: #ffcc00;
     }
 
-    .btn-confirm {
-      padding: 15px;
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1vw;
       width: 80%;
-      font-size: 1.3em;
-      background: #ff4444;
-      color: #fff;
+    }
+
+    .btn {
+      font-size: 1.8vw;
+      padding: 2vh;
       border: none;
       border-radius: 8px;
+      background: #555;
+      color: white;
       cursor: pointer;
       transition: 0.2s;
     }
+    .btn:hover { background: #777; }
 
-    .btn-confirm:hover {
-      background: #ff6666;
-    }
-
-    .results {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      width: 90%;
-      max-height: 40vh;
-      overflow-y: auto;
-    }
-
-    .result-item {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      cursor: pointer;
-      background: #444;
-      padding: 8px;
-      border-radius: 8px;
-      transition: 0.2s;
-    }
-
-    .result-item:hover {
-      background: #666;
-    }
-
-    .result-item img {
-      width: 100px;
-      border-radius: 6px;
-    }
-
-    .result-item span {
-      flex: 1;
-      font-size: 0.9em;
-    }
-
-    @media (max-width: 1024px) {
-      .container {
-        flex-direction: column;
-      }
-      iframe {
-        height: 40vh;
-      }
-      .results {
-        max-height: 30vh;
-      }
+    .btn-confirm {
+      grid-column: span 3;
+      background: #ff4444;
+      font-size: 2vw;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- 왼쪽 영상 -->
+    <!-- 왼쪽: 영상 -->
     <div class="player-box">
-      <h2>✨ 노래방 반주기 ✨</h2>
-      <iframe id="player" src="" frameborder="0"
+      <h2>✨ 찬송가 반주기 ✨</h2>
+      <iframe id="player"
+        src=""
+        frameborder="0"
         allow="autoplay; encrypted-media"
         allowfullscreen>
       </iframe>
     </div>
 
-    <!-- 오른쪽 패널 -->
+    <!-- 오른쪽: 입력/키패드 -->
     <div class="control-panel">
-      <input type="text" id="songInput" placeholder="노래 제목 입력">
-      <button class="btn-confirm" onclick="searchSongs()">검색 🔍</button>
+      <input type="text" id="display" placeholder="번호 입력" inputmode="numeric" pattern="[0-9]*">
 
-      <!-- ✅ 검색 결과 리스트 -->
-      <div class="results" id="results"></div>
+      <div class="keypad">
+        <button class="btn" onclick="pressNum('1')">1</button>
+        <button class="btn" onclick="pressNum('2')">2</button>
+        <button class="btn" onclick="pressNum('3')">3</button>
+        <button class="btn" onclick="pressNum('4')">4</button>
+        <button class="btn" onclick="pressNum('5')">5</button>
+        <button class="btn" onclick="pressNum('6')">6</button>
+        <button class="btn" onclick="pressNum('7')">7</button>
+        <button class="btn" onclick="pressNum('8')">8</button>
+        <button class="btn" onclick="pressNum('9')">9</button>
+        <button class="btn" onclick="clearNum()">C</button>
+        <button class="btn" onclick="pressNum('0')">0</button>
+        <button class="btn" onclick="backspace()">⌫</button>
+        <button class="btn btn-confirm" onclick="playSong()">재생 ▶</button>
+      </div>
     </div>
   </div>
 
   <script>
-    const API_KEY = "AIzaSyB-_4IassJXMmCp3y-3O6Tt0fObbzYYFto"; // 본인 키
-
-    async function searchSongs() {
-      let songTitle = document.getElementById("songInput").value.trim();
-      if (!songTitle) {
-        alert("노래 제목을 입력하세요!");
-        return;
-      }
-
-      // ✅ 브랜드 없이 "노래제목 노래방"
-      let query = encodeURIComponent(`${songTitle} 노래방`);
-
-      // ✅ 퍼가기 가능한 영상만 검색
-      let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&videoSyndicated=true&maxResults=10&q=${query}&key=${API_KEY}`;
-
-      try {
-        let res = await fetch(url);
-        let data = await res.json();
-        console.log("검색 결과:", data);
-
-        let resultsDiv = document.getElementById("results");
-        resultsDiv.innerHTML = "";
-
-        if (data.items && data.items.length > 0) {
-          data.items.forEach(video => {
-            let videoId = video.id.videoId;
-            let title = video.snippet.title;
-            let thumb = video.snippet.thumbnails.medium.url;
-
-            let item = document.createElement("div");
-            item.className = "result-item";
-            item.innerHTML = `<img src="${thumb}"><span>${title}</span>`;
-            item.onclick = () => playVideo(videoId);
-
-            resultsDiv.appendChild(item);
-          });
-        } else {
-          resultsDiv.innerHTML = "<p>재생 가능한 영상이 없습니다.</p>";
-        }
-      } catch (err) {
-        console.error("API 오류:", err);
-        alert("검색 중 오류가 발생했습니다.");
-      }
+    function pressNum(n){ document.getElementById("display").value += n; }
+    function clearNum(){ document.getElementById("display").value = ""; }
+    function backspace(){
+      const el = document.getElementById("display");
+      el.value = el.value.slice(0, -1);
     }
 
-    function playVideo(videoId) {
-      document.getElementById("player").src =
-        `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+    function playSong(){
+      const input = document.getElementById("display");
+      const num = input.value.trim();
+      if(!num){ alert("번호를 입력하세요!"); return; }
+
+      // API 없이: 검색어 기반 embed (검색 결과를 재생목록처럼)
+      const query = encodeURIComponent(num + " 찬송가");
+      const src = `https://www.youtube.com/embed?listType=search&list=${query}&autoplay=1&rel=0`;
+
+      // 소리 ON 자동재생: 버튼 클릭이 사용자 상호작용이므로 허용됨
+      const iframe = document.getElementById("player");
+      iframe.src = src;
+
+      // 재생 후 입력창 초기화
+      input.value = "";
     }
 
-    document.getElementById("songInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        searchSongs();
-      }
+    // Enter 키로도 재생
+    document.getElementById("display").addEventListener("keydown", (e)=>{
+      if(e.key === "Enter") playSong();
     });
   </script>
 </body>
