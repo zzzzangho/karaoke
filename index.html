@@ -2,8 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>✨ 노래방 반주기 ✨</title>
-  <!-- ✅ 모바일 반응형 필수 -->
+  <title>✨ 노래방 반주기2 ✨</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -28,36 +27,28 @@
       max-width: 1600px;
     }
 
-    /* 왼쪽 영상 */
     .player-box {
-      flex: 3;
+      flex: 2;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
     iframe {
       width: 100%;
-      height: 100%;
-      max-height: 80vh;
+      height: 60vh;
       border-radius: 12px;
       box-shadow: 0 0 15px rgba(0,0,0,0.7);
+      margin-bottom: 20px;
     }
 
-    /* 오른쪽 제어 패널 */
     .control-panel {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       gap: 20px;
-    }
-
-    h2 {
-      margin-bottom: 10px;
-      text-align: center;
     }
 
     .selector {
@@ -107,21 +98,49 @@
       background: #ff6666;
     }
 
-    /* ✅ 모바일/태블릿일 때 세로 레이아웃 */
+    .results {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+
+    .result-item {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+      background: #444;
+      padding: 8px;
+      border-radius: 8px;
+      transition: 0.2s;
+    }
+
+    .result-item:hover {
+      background: #666;
+    }
+
+    .result-item img {
+      width: 120px;
+      border-radius: 6px;
+    }
+
+    .result-item span {
+      flex: 1;
+      font-size: 0.9em;
+    }
+
     @media (max-width: 1024px) {
-      body {
-        align-items: stretch;
-      }
       .container {
         flex-direction: column;
-        gap: 20px;
-      }
-      .player-box, .control-panel {
-        flex: none;
-        width: 100%;
       }
       iframe {
-        max-height: 50vh;
+        height: 40vh;
+      }
+      .results {
+        max-height: 30vh;
       }
     }
   </style>
@@ -131,11 +150,11 @@
     <!-- 왼쪽 영상 -->
     <div class="player-box">
       <h2>✨ 노래방 반주기 ✨</h2>
-      <iframe id="player"
-        src="" frameborder="0"
+      <iframe id="player" src="" frameborder="0"
         allow="autoplay; encrypted-media"
         allowfullscreen>
       </iframe>
+      <div class="results" id="results"></div>
     </div>
 
     <!-- 오른쪽 패널 -->
@@ -146,7 +165,7 @@
       </div>
 
       <input type="text" id="songInput" placeholder="노래 제목 입력">
-      <button class="btn-confirm" onclick="playSong()">재생 ▶</button>
+      <button class="btn-confirm" onclick="searchSongs()">검색 🔍</button>
     </div>
   </div>
 
@@ -158,7 +177,6 @@
       selectedBrand = brand;
       document.getElementById("kyBtn").classList.remove("active");
       document.getElementById("tjBtn").classList.remove("active");
-
       if (brand === "금영") {
         document.getElementById("kyBtn").classList.add("active");
       } else {
@@ -166,47 +184,57 @@
       }
     }
 
-    async function playSong() {
+    async function searchSongs() {
       let songTitle = document.getElementById("songInput").value.trim();
       if (!songTitle) {
         alert("노래 제목을 입력하세요!");
         return;
       }
 
-      // ✅ 금영은 KY karaoke / TJ는 TJ
       let brandQuery = selectedBrand === "금영" ? "KY karaoke" : "TJ";
       let query = encodeURIComponent(`${brandQuery} ${songTitle}`);
 
-      // ✅ videoEmbeddable=true → 퍼가기가 허용된 영상만 검색
-      let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=1&q=${query}&key=${API_KEY}`;
+      // ✅ 여러 결과 가져오기
+      let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=5&q=${query}&key=${API_KEY}`;
 
       try {
         let res = await fetch(url);
         let data = await res.json();
-        console.log("API 응답:", data);
+        console.log("검색 결과:", data);
+
+        let resultsDiv = document.getElementById("results");
+        resultsDiv.innerHTML = "";
 
         if (data.items && data.items.length > 0) {
-          let first = data.items[0];
-          if (first.id.kind === "youtube#video") {
-            let videoId = first.id.videoId;
-            document.getElementById("player").src =
-              `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-            document.getElementById("songInput").value = "";
-          } else {
-            alert("검색된 결과가 영상이 아닙니다.");
-          }
+          data.items.forEach(video => {
+            let videoId = video.id.videoId;
+            let title = video.snippet.title;
+            let thumb = video.snippet.thumbnails.medium.url;
+
+            let item = document.createElement("div");
+            item.className = "result-item";
+            item.innerHTML = `<img src="${thumb}"><span>${title}</span>`;
+            item.onclick = () => playVideo(videoId);
+
+            resultsDiv.appendChild(item);
+          });
         } else {
-          alert("검색 결과가 없습니다. (임베드 불가능 영상 제외됨)");
+          resultsDiv.innerHTML = "<p>검색 결과가 없습니다.</p>";
         }
       } catch (err) {
         console.error("API 오류:", err);
-        alert("영상을 불러오는 중 오류가 발생했습니다.");
+        alert("검색 중 오류가 발생했습니다.");
       }
+    }
+
+    function playVideo(videoId) {
+      document.getElementById("player").src =
+        `https://www.youtube.com/embed/${videoId}?autoplay=1`;
     }
 
     document.getElementById("songInput").addEventListener("keydown", function(e) {
       if (e.key === "Enter") {
-        playSong();
+        searchSongs();
       }
     });
   </script>
