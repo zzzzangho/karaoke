@@ -173,10 +173,12 @@
         return;
       }
 
-      // ✅ 금영 = KY karaoke / TJ = TJ
+      // ✅ 금영은 KY karaoke / TJ는 TJ
       let brandQuery = selectedBrand === "금영" ? "KY karaoke" : "TJ";
       let query = encodeURIComponent(`${brandQuery} ${songTitle}`);
-      let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${query}&key=${API_KEY}`;
+
+      // ✅ videoEmbeddable=true → 퍼가기가 허용된 영상만 검색
+      let url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=1&q=${query}&key=${API_KEY}`;
 
       try {
         let res = await fetch(url);
@@ -194,7 +196,7 @@
             alert("검색된 결과가 영상이 아닙니다.");
           }
         } else {
-          alert("검색 결과가 없습니다.");
+          alert("검색 결과가 없습니다. (임베드 불가능 영상 제외됨)");
         }
       } catch (err) {
         console.error("API 오류:", err);
